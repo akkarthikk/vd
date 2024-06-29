@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Videos List</title>
+</head>
+<body>
+    <h1>List of Videos</h1>
+    <ul id="video-list"></ul>
+
+    <script>
+        // Fetch videos from server
+        fetch('/videos')
+            .then(response => response.json())
+            .then(data => {
+                const videoList = document.getElementById('video-list');
+                data.forEach(video => {
+                    const listItem = document.createElement('li');
+
+                    // Create video element
+                    const videoElement = document.createElement('video');
+                    videoElement.controls = true;
+                    videoElement.src = `/video/${video.id}`;
+                    videoElement.width = 320;
+
+                    // Create download link
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/download/${video.id}`;
+                    downloadLink.textContent = 'Download';
+
+                    // Create video info paragraph
+                    const videoInfo = document.createElement('p');
+                    videoInfo.textContent = `ID: ${video.id}, Latitude: ${video.latitude}, Longitude: ${video.longitude}, Timestamp: ${video.timestamp}`;
+
+                    // Append elements to list item
+                    listItem.appendChild(videoElement);
+                    listItem.appendChild(downloadLink);
+                    listItem.appendChild(videoInfo);
+                    videoList.appendChild(listItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching videos:', error);
+            });
+    </script>
+</body>
+</html>

